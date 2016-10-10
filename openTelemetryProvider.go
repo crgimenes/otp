@@ -1,4 +1,4 @@
-package main
+package openTelemetryProvider
 
 import (
 	"encoding/json"

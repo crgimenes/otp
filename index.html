@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      var conn = new WebSocket('ws://localhost:8000');
+      conn.onopen = function () {
+        console.log('Connected with server WebSocket');
+        conn.send('dictionary')
+      }
+
+      conn.onmessage = function(msg) {
+        console.log(msg)
+      }
+      
+    </script>
+  </body>
+</html>

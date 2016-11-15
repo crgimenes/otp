@@ -55,10 +55,21 @@ type dataValue struct {
 	Value     interface{} `json:"value"`     // 30.00046680219344
 }
 
+type handleFn func()
+
 const dictionary = "dictionary.json"
 
 var clientList map[*websocket.Conn]clientStatus
 var systemStatus map[string]dataValue
+var subsystemHandleList map[string]handleFn
+
+func init() {
+	log.Println("Initializing Telemetry Hub")
+
+	clientList = make(map[*websocket.Conn]clientStatus)
+	systemStatus = make(map[string]dataValue)
+	subsystemHandleList = make(map[string]handleFn)
+}
 
 func makeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
@@ -81,18 +92,13 @@ func CloseAll() {
 	}
 }
 
+func SubsystemHandleFunc(subsystemIdentifier string, handleFunc handleFn) {
+	subsystemHandleList[subsystemIdentifier] = handleFunc
+}
+
 func ListenAndServe(port int, timerInterval int) {
 
-	log.Println("Initializing Telemetry Hub")
 	log.Println("websocket port", port)
-
-	clientList = make(map[*websocket.Conn]clientStatus)
-	systemStatus = make(map[string]dataValue)
-
-	var aux dataValue
-	aux.Timestamp = makeTimestamp()
-	aux.Value = float64(1.0)
-	systemStatus["pwr.v"] = aux
 
 	go func() {
 		for {
@@ -104,12 +110,16 @@ func ListenAndServe(port int, timerInterval int) {
 			x := aux.Value.(float64) + 0.1
 			aux.Value = x
 			systemStatus["pwr.v"] = aux
-
 			fmt.Println("pwr.v = ", aux.Value.(float64))
 
-			for id, status := range systemStatus {
-				SendValue(id, status.Timestamp, status.Value)
+			for subsystem, _ := range subsystemHandleList {
+				go RunSubsystemHandleFunc(subsystem)
 			}
+
+			for id, status := range systemStatus {
+				go SendValue(id, status.Timestamp, status.Value)
+			}
+
 		}
 	}()
 
@@ -127,6 +137,12 @@ func SendValue(id string, timestamp int64, value interface{}) {
 				log.Println(err)
 			}
 		}
+	}
+}
+
+func RunSubsystemHandleFunc(subsystemIdentifier string) {
+	if f, ok := subsystemHandleList[subsystemIdentifier]; ok && f != nil {
+		f()
 	}
 }
 

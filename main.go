@@ -31,5 +31,15 @@ func main() {
 		os.Exit(0)
 	}()
 
+	var aux dataValue
+	aux.Timestamp = makeTimestamp()
+	aux.Value = float64(1.0)
+	systemStatus["pwr.v"] = aux
+
+	SubsystemHandleFunc("main.func", mainFunc)
 	ListenAndServe(8081, 1000)
+}
+
+func mainFunc() {
+	fmt.Println("teste teste teste")
 }

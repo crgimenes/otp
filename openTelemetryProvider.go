@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
 	"time"
 
@@ -59,8 +57,6 @@ type dataValue struct {
 
 const dictionary = "dictionary.json"
 
-var port int
-var timerInterval int
 var clientList map[*websocket.Conn]clientStatus
 var systemStatus map[string]dataValue
 
@@ -79,14 +75,13 @@ func makeData(id string, timestamp int64, value interface{}) (r Data) {
 	return
 }
 
-func main() {
-
-	flag.IntVar(&port, "port", 8081, "websocket port, provides telemetry data to OpenMCT")
-	flag.IntVar(&timerInterval, "timer", 1000, "main timer interval")
-	flag.Usage = func() {
-		flag.PrintDefaults()
+func CloseAll() {
+	for c := range clientList {
+		c.Close()
 	}
-	flag.Parse()
+}
+
+func ListenAndServe(port int, timerInterval int) {
 
 	log.Println("Initializing Telemetry Hub")
 	log.Println("websocket port", port)
@@ -98,76 +93,6 @@ func main() {
 	aux.Timestamp = makeTimestamp()
 	aux.Value = float64(1.0)
 	systemStatus["pwr.v"] = aux
-
-	go func() {
-		sc := make(chan os.Signal, 1)
-		signal.Notify(sc, os.Interrupt)
-		<-sc
-
-		//TODO free resources ...
-
-		// close all connections
-		for c := range clientList {
-			c.Close()
-		}
-
-		fmt.Print("\n")
-		log.Println("Have a nice day!")
-		os.Exit(0)
-	}()
-
-	/*
-		//data
-		type PwrV struct {
-			ID    string `json:"id"`   // pwr.v
-			Type  string `json:"type"` // data
-			Value struct {
-				Timestamp int64   `json:"timestamp"` // 1474891025120
-				Value     interface{}  `json:"value"`     // 30.00046680219344
-			} `json:"value"`
-		}
-
-		{"type":"data","id":"pwr.v","value":{"timestamp":1474891025120,"value":30.00046680219344}}
-		{"type":"data","id":"pwr.v","value":{"timestamp":1475620104145,"value":30.012436195447858}}
-		{"type":"data","id":"pwr.v","value":{"timestamp":1475620105154,"value":30.014189050863177}}
-		{"type":"data","id":"pwr.v","value":{"timestamp":1475620106157,"value":30.02952627354623}}
-
-
-		//history data
-		type HpwrV struct {
-			ID    string `json:"id"`   // pwr.v
-			Type  string `json:"type"` // history
-			Value []struct {
-				Timestamp int64   `json:"timestamp"` // 1474891025120
-				Value     interface{} `json:"value"`     // 30.086271694110074
-			} `json:"value"`
-		}
-
-		//Example: Trying to access Action member of a statement myStatement.
-		switch a := PwrV.Value.Value.(type) {
-		case []string:
-			//Action is a slice. Handle it accordingly.
-		case string:
-			//Action is a string. Handle it accordingly.
-		default:
-			//Some other datatype that can be returned by aws?
-		}
-
-		https://newfivefour.com/golang-interface-type-assertions-switch.html
-		var anything interface{} = "string"
-		switch v := anything.(type) {
-		                    case string:
-		                            fmt.Println(v)
-		                    case int32, int64:
-		                            fmt.Println(v)
-		                    case SomeCustomType:
-		                            fmt.Println(v)
-		                    default:
-		                            fmt.Println("unknown")
-		            }
-
-		http://attilaolah.eu/2013/11/29/json-decoding-in-go/
-	*/
 
 	go func() {
 		for {
@@ -183,18 +108,16 @@ func main() {
 			fmt.Println("pwr.v = ", aux.Value.(float64))
 
 			for id, status := range systemStatus {
-				sendValue(id, status.Timestamp, status.Value)
+				SendValue(id, status.Timestamp, status.Value)
 			}
 		}
 	}()
-
-	log.Println("Press ^C to terminate.")
 
 	http.HandleFunc("/", wsHandler)
 	panic(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 
-func sendValue(id string, timestamp int64, value interface{}) {
+func SendValue(id string, timestamp int64, value interface{}) {
 	for conn, c := range clientList {
 		if v, ok := c.Subscriptions[id]; ok && v {
 
@@ -241,7 +164,6 @@ func telemetryWs(conn *websocket.Conn) {
 		}
 
 		msg := string(p)
-		fmt.Println("msg:", msg, messageType)
 		log.Printf("msg:[%s] type:%d\r\n", msg, messageType)
 		msgArray := strings.Split(msg, " ")
 		for k, v := range msgArray {

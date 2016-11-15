@@ -1,4 +1,4 @@
-package openTelemetryProvider
+package main
 
 import (
 	"encoding/json"
@@ -94,10 +94,10 @@ func main() {
 	clientList = make(map[*websocket.Conn]clientStatus)
 	systemStatus = make(map[string]dataValue)
 
-	//var aux dataValue
-	//aux.Timestamp = makeTimestamp()
-	//aux.Value = float64(1.0)
-	//systemStatus["pwr.v"] = aux
+	var aux dataValue
+	aux.Timestamp = makeTimestamp()
+	aux.Value = float64(1.0)
+	systemStatus["pwr.v"] = aux
 
 	go func() {
 		sc := make(chan os.Signal, 1)
@@ -173,6 +173,15 @@ func main() {
 		for {
 			time.Sleep(time.Millisecond * time.Duration(timerInterval))
 
+			// remover
+			var aux dataValue = systemStatus["pwr.v"]
+			aux.Timestamp = makeTimestamp()
+			x := aux.Value.(float64) + 0.1
+			aux.Value = x
+			systemStatus["pwr.v"] = aux
+
+			fmt.Println("pwr.v = ", aux.Value.(float64))
+
 			for id, status := range systemStatus {
 				sendValue(id, status.Timestamp, status.Value)
 			}
@@ -232,7 +241,7 @@ func telemetryWs(conn *websocket.Conn) {
 		}
 
 		msg := string(p)
-		//fmt.Println("msg:", msg, messageType)
+		fmt.Println("msg:", msg, messageType)
 		log.Printf("msg:[%s] type:%d\r\n", msg, messageType)
 		msgArray := strings.Split(msg, " ")
 		for k, v := range msgArray {
@@ -288,6 +297,7 @@ func telemetryWs(conn *websocket.Conn) {
 				//return
 			}
 			clientList[conn].Subscriptions[msgArray[1]] = true
+			log.Println("client subscribe", msgArray[1])
 		case "unsubscribe":
 			if len(msgArray) < 2 {
 				log.Println("error: no unsubscribe parameter")

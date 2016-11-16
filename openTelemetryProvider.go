@@ -1,4 +1,4 @@
-package main
+package openTelemetryProvider
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -57,11 +56,12 @@ type dataValue struct {
 
 type handleFn func()
 
-const dictionary = "dictionary.json"
-
 var clientList map[*websocket.Conn]clientStatus
 var systemStatus map[string]dataValue
 var subsystemHandleList map[string]handleFn
+var taxonomyDictionary = Dictionary{}
+
+//var lock = sync.RWMutex{}
 
 func init() {
 	log.Println("Initializing Telemetry Hub")
@@ -71,7 +71,8 @@ func init() {
 	subsystemHandleList = make(map[string]handleFn)
 }
 
-func makeTimestamp() int64 {
+// MakeTimestamp creates an int64 with current timestamp in the format expected by OpenMCT
+func MakeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
@@ -86,16 +87,35 @@ func makeData(id string, timestamp int64, value interface{}) (r Data) {
 	return
 }
 
+// CloseAll close all websocket connections
 func CloseAll() {
 	for c := range clientList {
 		c.Close()
 	}
 }
 
+// SubsystemHandleFunc set a subsystem handle function
 func SubsystemHandleFunc(subsystemIdentifier string, handleFunc handleFn) {
 	subsystemHandleList[subsystemIdentifier] = handleFunc
 }
 
+// SetDataValue set a value to subsystem
+func SetDataValue(identifier string, timeStamp int64, value interface{}) {
+	dv := dataValue{}
+
+	if timeStamp == -1 {
+		timeStamp = MakeTimestamp()
+	}
+
+	dv.Timestamp = timeStamp
+	dv.Value = value
+
+	//lock.Lock()
+	systemStatus[identifier] = dv
+	//lock.Unlock()
+}
+
+// ListenAndServe websocket
 func ListenAndServe(port int, timerInterval int) {
 
 	log.Println("websocket port", port)
@@ -104,20 +124,12 @@ func ListenAndServe(port int, timerInterval int) {
 		for {
 			time.Sleep(time.Millisecond * time.Duration(timerInterval))
 
-			// remover
-			var aux dataValue = systemStatus["pwr.v"]
-			aux.Timestamp = makeTimestamp()
-			x := aux.Value.(float64) + 0.1
-			aux.Value = x
-			systemStatus["pwr.v"] = aux
-			fmt.Println("pwr.v = ", aux.Value.(float64))
-
-			for subsystem, _ := range subsystemHandleList {
-				go RunSubsystemHandleFunc(subsystem)
+			for subsystem := range subsystemHandleList {
+				RunSubsystemHandleFunc(subsystem)
 			}
 
 			for id, status := range systemStatus {
-				go SendValue(id, status.Timestamp, status.Value)
+				SendValue(id, status.Timestamp, status.Value)
 			}
 
 		}
@@ -127,8 +139,12 @@ func ListenAndServe(port int, timerInterval int) {
 	panic(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 
+// SendValue send value to subsystem by identifier
 func SendValue(id string, timestamp int64, value interface{}) {
 	for conn, c := range clientList {
+		//lock.Lock()
+		//defer lock.Unlock()
+
 		if v, ok := c.Subscriptions[id]; ok && v {
 
 			var p = makeData(id, timestamp, value)
@@ -140,6 +156,7 @@ func SendValue(id string, timestamp int64, value interface{}) {
 	}
 }
 
+// RunSubsystemHandleFunc call subsystem handle function
 func RunSubsystemHandleFunc(subsystemIdentifier string) {
 	if f, ok := subsystemHandleList[subsystemIdentifier]; ok && f != nil {
 		f()
@@ -187,44 +204,10 @@ func telemetryWs(conn *websocket.Conn) {
 		}
 
 		switch msgArray[0] {
-		case "teste":
-
-			var m map[string]string
-			m = make(map[string]string)
-			m["teste1"] = "teste1"
-			m["teste2"] = "teste2"
-
-			if err = conn.WriteJSON(m); err != nil {
-				log.Println(err)
-			}
-
 		case "dictionary":
-			//var m map[string]string
-			//m = make(map[string]string)
-			//m["dictionary"] = readFile("./dictionary.json")
-
-			/*
-				type: "dictionary",
-				value: dictionary
-			*/
-			var content []byte
-			content, err = ioutil.ReadFile("./dictionary.json")
-
-			if err != nil {
-				panic(err)
-			}
-
-			doc := Dictionary{}
-			err = json.Unmarshal(content, &doc)
-			if err != nil {
-				panic(err)
-			}
-
 			dc := DictionaryColection{}
 			dc.Type = "dictionary"
-			dc.Value = doc
-
-			log.Println("Name:", dc.Value.Name)
+			dc.Value = taxonomyDictionary
 
 			if err = conn.WriteJSON(dc); err != nil {
 				log.Println(err)
@@ -267,11 +250,19 @@ func telemetryWs(conn *websocket.Conn) {
 	}
 }
 
-func readFile(fn string) string {
-	content, err := ioutil.ReadFile(fn)
+// LoadTaxonomyDictionaryFromFile load dictionary from file
+func LoadTaxonomyDictionaryFromFile(fn string) (err error) {
+	var content []byte
+	content, err = ioutil.ReadFile(fn)
 	if err != nil {
-		log.Println("read file:", fn, "error:", err)
-		os.Exit(-1)
+		err = fmt.Errorf("LoadTaxonomyDictionaryFromFile error: %s", err)
+		return
 	}
-	return string(content)
+
+	err = json.Unmarshal(content, &taxonomyDictionary)
+	if err != nil {
+		err = fmt.Errorf("LoadTaxonomyDictionaryFromFile error: %s", err)
+		return
+	}
+	return
 }

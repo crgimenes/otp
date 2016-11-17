@@ -1,4 +1,7 @@
-# OpenMCT telemetry-provider
+# Open Telemetry Provider
+
+[![wercker status](https://app.wercker.com/status/8b9d7c2d939aaf7bdbe5ae392ae2d513/s/master "wercker status")](https://app.wercker.com/project/byKey/8b9d7c2d939aaf7bdbe5ae392ae2d513)
+[![GoDoc](https://godoc.org/github.com/crgimenes/openTelemetryProvider?status.png)](https://godoc.org/github.com/crgimenes/openTelemetryProvider)
 
 Simple and easy to use telemetry provider to use with NASA OpenMCT
 

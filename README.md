@@ -3,7 +3,7 @@
 [![wercker status](https://app.wercker.com/status/8b9d7c2d939aaf7bdbe5ae392ae2d513/s/master "wercker status")](https://app.wercker.com/project/byKey/8b9d7c2d939aaf7bdbe5ae392ae2d513)
 [![GoDoc](https://godoc.org/github.com/crgimenes/openTelemetryProvider?status.png)](https://godoc.org/github.com/crgimenes/openTelemetryProvider)
 
-Simple and easy to use telemetry provider to use with NASA OpenMCT
+Simple and easy to use telemetry provider to use with [NASA OpenMCT](https://nasa.github.io/openmct/)
 
 ## Install
 
@@ -11,11 +11,16 @@ Simple and easy to use telemetry provider to use with NASA OpenMCT
 go get -u github.com/crgimenes/openTelemetryProvider
 ```
 
+OpenMPT is undergoing many changes. At the moment our code works with the last version before the API change.
+```
+git clone https://github.com/nasa/openmct.git
+git checkout 156ba832f2da3c219f65f86198fb228557566449
+```
+
+
 ## Example
 
 ![OpenMCT with openTelemetryProvider](img/openMCT.png)
-
-
 
 Taxonomy dictionary file *dictionary.json*
 ```json

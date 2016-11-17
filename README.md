@@ -10,6 +10,10 @@ go get -u github.com/crgimenes/openTelemetryProvider
 
 ## Example
 
+![OpenMCT with openTelemetryProvider](img/openMCT.png)
+
+
+
 Taxonomy dictionary file *dictionary.json*
 ```json
 {

@@ -192,6 +192,10 @@ func telemetryWs(conn *websocket.Conn) {
 
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				log.Println("Socket close normal")
+				return
+			}
 			log.Printf("error: %v", err)
 			return
 		}

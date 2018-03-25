@@ -1,4 +1,4 @@
-package openTelemetryProvider
+package otp
 
 import (
 	"encoding/json"

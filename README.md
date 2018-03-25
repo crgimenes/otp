@@ -1,15 +1,15 @@
 # Open Telemetry Provider
 
 [![wercker status](https://app.wercker.com/status/8b9d7c2d939aaf7bdbe5ae392ae2d513/s/master "wercker status")](https://app.wercker.com/project/byKey/8b9d7c2d939aaf7bdbe5ae392ae2d513)
-[![GoDoc](https://godoc.org/github.com/crgimenes/openTelemetryProvider?status.png)](https://godoc.org/github.com/crgimenes/openTelemetryProvider)
- [![Go Report Card](https://goreportcard.com/badge/github.com/crgimenes/openTelemetryProvider)](https://goreportcard.com/report/github.com/crgimenes/openTelemetryProvider)
+[![GoDoc](https://godoc.org/github.com/crgimenes/otp?status.png)](https://godoc.org/github.com/crgimenes/otp)
+ [![Go Report Card](https://goreportcard.com/badge/github.com/crgimenes/otp)](https://goreportcard.com/report/github.com/crgimenes/otp)
 
 Simple and easy telemetry provider write in Go to use with [NASA OpenMCT](https://nasa.github.io/openmct/)
 
 ## Install
 
 ```
-go get -u github.com/crgimenes/openTelemetryProvider
+go get -u github.com/crgimenes/otp
 ```
 
 OpenMPT is undergoing many changes. At the moment our code works with the last version before the API change.
@@ -21,7 +21,7 @@ git checkout 156ba832f2da3c219f65f86198fb228557566449
 
 ## Example
 
-![OpenMCT with openTelemetryProvider](img/openMCT.png)
+![OpenMCT with otp](img/openMCT.png)
 
 Taxonomy dictionary file *dictionary.json*
 ```json
@@ -57,7 +57,7 @@ import (
 	"os"
 	"os/signal"
 
-	otp "github.com/crgimenes/openTelemetryProvider"
+	otp "github.com/crgimenes/otp"
 )
 
 func main() {

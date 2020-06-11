@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/crgimenes/otp?status.png)](https://godoc.org/github.com/crgimenes/otp)
  [![Go Report Card](https://goreportcard.com/badge/github.com/crgimenes/otp)](https://goreportcard.com/report/github.com/crgimenes/otp)
 
-Simple and easy telemetry provider write in Go to use with [NASA OpenMCT](https://nasa.github.io/openmct/)
+Simple and easy telemetry provider written in Go to use with [NASA OpenMCT](https://nasa.github.io/openmct/)
 
 ## Install
 

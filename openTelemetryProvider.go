@@ -3,9 +3,9 @@ package otp
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -255,7 +255,7 @@ func telemetryWs(conn *websocket.Conn) {
 // LoadTaxonomyDictionaryFromFile load dictionary from file
 func LoadTaxonomyDictionaryFromFile(fn string) (err error) {
 	var content []byte
-	content, err = ioutil.ReadFile(fn)
+	content, err = os.ReadFile(fn)
 	if err != nil {
 		err = fmt.Errorf("LoadTaxonomyDictionaryFromFile error: %s", err)
 		return
